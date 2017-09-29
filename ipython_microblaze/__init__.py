@@ -84,3 +84,5 @@ if instance:
 from .grove_adc import GroveADC
 from .grove_ledbar import LEDBar
 from .pmod_oled import PmodOLED
+from .grove_i2c import I2C
+from .grove_gpio import GPIO
