@@ -36,7 +36,7 @@ __copyright__ = "Copyright 2017, Xilinx"
 __email__ = "ogden@xilinx.com"
 
 setup(
-    name = "ipyhon_microblaze",
+    name = "ipython_microblaze",
     version = "0.0.1",
     url = 'https://github.com/PeterOgden/ipython_microblaze',
     license = 'Apache Software License',
