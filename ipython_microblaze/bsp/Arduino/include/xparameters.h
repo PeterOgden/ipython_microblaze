@@ -437,8 +437,8 @@
 
 /******************************************************************/
 
-#define STDIN_BASEADDRESS 0x40600000
-#define STDOUT_BASEADDRESS 0x40600000
+#define STDIN_BASEADDRESS 0x00000000
+#define STDOUT_BASEADDRESS 0x00000000
 
 /******************************************************************/
 
