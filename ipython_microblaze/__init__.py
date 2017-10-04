@@ -86,3 +86,7 @@ from .grove_ledbar import LEDBar
 from .pmod_oled import PmodOLED
 from .grove_i2c import I2C
 from .grove_gpio import GPIO
+from .grove_pwm import PWM
+from .grove_analog import Analog
+from .library import Library
+from .library import Peripheral

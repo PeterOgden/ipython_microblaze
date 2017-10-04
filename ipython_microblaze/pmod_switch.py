@@ -42,10 +42,12 @@ PmodSwitch.declaration = R"""
 #define G4 3
 
 void pmod_switch_init();
-void pmod_switch_grove_i2c(unsigned char port);
-void pmod_switch_grove_gpio(unsigned char port, unsigned char channel0,
-                            unsigned char channel1);
-
+void pmod_switch_i2c_grove(unsigned char port);
+void pmod_switch_i2c_raw(unsigned char scl, unsigned char sda);
+int pmod_switch_gpio_grove(unsigned char port, unsigned char wire);
+int pmod_switch_gpio_raw(unsigned char pin);
+void pmod_switch_pwm_grove(unsigned char port, unsigned char wire);
+void pmod_switch_pwm_raw(unsigned char pin);
 """
 
 PmodSwitch.definition = R"""
@@ -92,17 +94,33 @@ static void assign_connection(unsigned char input, unsigned char output) {
     uses[output] = input;
 }
 
-void pmod_switch_grove_gpio(unsigned char port, unsigned channel0,
-                            unsigned char channel1) {
-    assign_connection(grove_port_map[port][0], channel0);
-    assign_connection(grove_port_map[port][1], channel1);
+void pmod_switch_i2c_raw(unsigned char scl, unsigned char sda) {
+    assign_connection(scl, SCL);
+    assign_connection(sda, SDA);
     commit_assignments();
 }
 
-void pmod_switch_grove_i2c(unsigned char port) {
-    assign_connection(grove_port_map[port][0], SCL);
-    assign_connection(grove_port_map[port][1], SDA);
+void pmod_switch_i2c_grove(unsigned char port) {
+    pmod_switch_i2c_raw(grove_port_map[port][0], grove_port_map[port][1]);
+}
+
+int pmod_switch_gpio_raw(unsigned char pin) {
+    assign_connection(pin, pin);
     commit_assignments();
+    return pin;
+}
+
+int pmod_switch_gpio_grove(unsigned char port, unsigned char wire) {
+    return pmod_switch_gpio_raw(grove_port_map[port][wire]);
+}
+
+void pmod_switch_pwm_raw(unsigned char pin) {
+    assign_connection(pin, PWM);
+    commit_assignments();
+}
+
+void pmod_switch_pwm_grove(unsigned char port, unsigned char wire) {
+    pmod_switch_pwm_raw(grove_port_map[port][wire]);
 }
 
 """

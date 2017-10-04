@@ -42,10 +42,12 @@ PmodGPIO.declaration = R"""
 #define GPIO_IN 1
 #define GPIO_OUT 0
 
-void gpio_connect(unsigned char port);
-void gpio_write(unsigned char channel, unsigned char value);
-unsigned char gpio_read(unsigned char channel);
-void gpio_set_direction(unsigned char channel, unsigned char direction);
+typedef int gpio;
+
+gpio gpio_connect(unsigned char port, unsigned char wire);
+void gpio_write(gpio channel, unsigned char value);
+unsigned char gpio_read(gpio channel);
+void gpio_set_direction(gpio channel, unsigned char direction);
 
 """
 
@@ -57,13 +59,16 @@ unsigned int values = 0;
 unsigned int tristate = 0;
 XGpio gpo;
 
-void gpio_connect(unsigned char port) {
+typedef int gpio;
+
+gpio gpio_connect(unsigned char port, unsigned char wire) {
     XGpio_Initialize(&gpo, XPAR_GPIO_0_DEVICE_ID);
     pmod_switch_init();
-    pmod_switch_grove_gpio(port, 0, 1);
+    int channel = pmod_switch_gpio_grove(port, wire);
+    return channel;
 }
 
-void gpio_write(unsigned char channel, unsigned char value) {
+void gpio_write(gpio channel, unsigned char value) {
     unsigned m = 1 << channel;
     if (value) {
         values |= m;
@@ -73,12 +78,12 @@ void gpio_write(unsigned char channel, unsigned char value) {
     XGpio_DiscreteWrite(&gpo, 1, values);
 }
 
-unsigned char gpio_read(unsigned char channel) {
+unsigned char gpio_read(gpio channel) {
     unsigned int v = XGpio_DiscreteRead(&gpo, 1);
     return (v >> channel) & 1;   
 }
 
-void gpio_set_direction(unsigned char channel, unsigned char direction) {
+void gpio_set_direction(gpio channel, unsigned char direction) {
     unsigned int m = 1 << channel;
     if (direction) {
         tristate |= m;
@@ -101,19 +106,20 @@ ArduinoGPIO.definition = R"""
 #include "xgpio_l.h"
 #include "xgpio.h"
 
+typedef int gpio;
+
 unsigned int values = 0;
 unsigned int tristate = 0;
-unsigned char shift = 0;
 XGpio gpo;
 
-void gpio_connect(unsigned char port) {
+gpio gpio_connect(unsigned char port, unsigned char wire) {
     XGpio_Initialize(&gpo, XPAR_GPIO_0_DEVICE_ID);
     arduino_switch_init();
-    shift = arduino_switch_grove_gpio(port);
+    return arduino_switch_gpio_grove(port, wire);
 }
 
 void gpio_write(unsigned char channel, unsigned char value) {
-    unsigned m = 1 << (channel + shift);
+    unsigned m = 1 << channel;
     if (value) {
         values |= m;
     } else {
@@ -124,11 +130,11 @@ void gpio_write(unsigned char channel, unsigned char value) {
 
 unsigned char gpio_read(unsigned char channel) {
     unsigned int v = XGpio_DiscreteRead(&gpo, 1);
-    return (v >> (channel + shift)) & 1;   
+    return (v >> channel) & 1;   
 }
 
 void gpio_set_direction(unsigned char channel, unsigned char direction) {
-    unsigned int m = 1 << (channel + shift);
+    unsigned int m = 1 << channel;
     if (direction) {
         tristate |= m;
     } else {

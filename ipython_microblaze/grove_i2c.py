@@ -48,7 +48,7 @@ PmodI2C.definition = R"""
 
 void i2c_connect(unsigned char port) {
     pmod_switch_init();
-    pmod_switch_grove_i2c(port);
+    pmod_switch_i2c_grove(port);
 }
 
 void i2c_write(unsigned char address, unsigned char* data, int length) {

@@ -88,7 +88,7 @@ void write_adc(u8 reg, u32 data, u8 bytes){
 
 void adc_init(unsigned char port) {
     pmod_switch_init();
-    pmod_switch_grove_i2c(port);
+    pmod_switch_i2c_grove(port);
     write_adc(REG_ADDR_CONFIG, 0x20, 1);
 }
 

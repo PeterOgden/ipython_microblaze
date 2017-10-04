@@ -44,9 +44,18 @@ ArduinoSwitch.declaration = R"""
 #define G6 5
 #define G7 6
 
-void arduino_switch_init();
-int arduino_switch_grove_gpio(unsigned char port);
+#define A1 0
+#define A2 1
+#define A3 2
+#define A4 3
 
+void arduino_switch_init();
+int arduino_switch_gpio_grove(unsigned char port, unsigned char wire);
+int arduino_switch_gpio_raw(unsigned char pin);
+int arduino_switch_analog_grove(unsigned char port, unsigned char wire);
+int arduino_switch_analog_raw(unsigned char pin);
+int arduino_switch_pwm_grove(unsigned char port, unsigned char wire);
+int arduino_switch_pwm_raw(unsigned char pin);
 """
 
 ArduinoSwitch.definition = R"""
@@ -55,10 +64,14 @@ ArduinoSwitch.definition = R"""
 
 char analog_pins[6];
 char uart_pin;
-char digital_pins[12];
+char digital_pins[14];
 
-static char gpio_offsets[7] = {
+static char pin_offsets[7] = {
     2, 3, 4, 6, 8, 10, 12
+};
+
+static char analog_offsets[4] = {
+    0, 2, 3, 4
 };
 
 static void commit_assignments() {
@@ -70,8 +83,6 @@ static void commit_assignments() {
         analog_pins[4],
         analog_pins[5],
         uart_pin,
-        digital_pins[0],
-        digital_pins[1],
         digital_pins[2],
         digital_pins[3],
         digital_pins[4],
@@ -81,7 +92,9 @@ static void commit_assignments() {
         digital_pins[8],
         digital_pins[9],
         digital_pins[10],
-        digital_pins[11]
+        digital_pins[11],
+        digital_pins[12],
+        digital_pins[13]
     );
 
 }
@@ -91,12 +104,31 @@ void arduino_switch_init() {
     commit_assignments();
 }
 
-int arduino_switch_grove_gpio(unsigned char port) {
-    int offset = gpio_offsets[port];
-    digital_pins[offset] = D_GPIO;
-    digital_pins[offset + 1] = D_GPIO;
+int arduino_switch_gpio_raw(unsigned char pin) {
+    digital_pins[pin] = D_GPIO;
     commit_assignments();
-    return offset;
+    return pin;
+}
+int arduino_switch_gpio_grove(unsigned char port, unsigned char wire) {
+    return arduino_switch_gpio_raw(pin_offsets[port] + wire);
 }
 
+int arduino_switch_analog_raw(unsigned char pin) {
+    analog_pins[pin] = A_GPIO;
+    commit_assignments();
+    return pin;
+}
+int arduino_switch_analog_grove(unsigned char port, unsigned char wire) {
+    return arduino_switch_analog_raw(analog_offsets[port] + wire);
+}
+
+int arduino_switch_pwm_raw(unsigned char pin) {
+    digital_pins[pin] = D_PWM;
+    commit_assignments();
+    return pin;
+}
+
+int arduino_switch_pwm_grove(unsigned char port, unsigned char wire) {
+    return arduino_switch_pwm_raw(pin_offsets[port] + wire);
+}
 """

@@ -28,8 +28,8 @@
 #   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from .library import Peripheral, Library
-from .pmod_switch import PmodSwitch
-from .arduino_switch import ArduinoSwitch
+from .grove_gpio import PmodGPIO
+from .grove_gpio import ArduinoGPIO
 
 __author__ = "Peter Ogden"
 __copyright__ = "Copyright 2017, Xilinx"
@@ -38,23 +38,39 @@ __email__ = "ogden@xilinx.com"
 PmodLEDBar = Library("PmodLEDBar")
 
 PmodLEDBar.declaration = R"""
-void ledbar_init(unsigned char port);
-void ledbar_set_level(unsigned char i);
-void ledbar_set_data(unsigned char data[10]);
+
+typedef struct {
+    short data;
+    short clk;
+} ledbar;
+
+ledbar ledbar_init(unsigned char port);
+void ledbar_set_level(ledbar, unsigned char i);
+void ledbar_set_data(ledbar, unsigned char data[10]);
+
 """
 PmodLEDBar.definition = R"""
 #include "pmod.h"
-#include "xgpio_l.h"
-#include "xgpio.h"
-#include "unistd.h"
 
-XGpio gpo;
+typedef struct {
+    short data;
+    short clk;
+} ledbar;
 
-void send_data(u8 data){
+void send_data(ledbar info, u8 data){
     int i;
     u8 data_state, clk_state, detect, data_internal;
 
     data_internal = data;
+
+    int clkval = 0;
+    // Pad the upper 8 bits
+    for (i = 0; i < 8; ++i) {
+        clkval ^= 1;
+        gpio_write(info.data, 0);
+        gpio_write(info.clk, clkval);
+    }
+
     // Working in 8-bit mode
     for (i = 0; i < 8; i++){
         /*
@@ -62,80 +78,85 @@ void send_data(u8 data){
          * Write it to the data_pin
          */
         data_state = (data_internal & 0x80) ? 0x00000001 : 0x00000000;
-        XGpio_DiscreteWrite(&gpo, 1, data_state);
-
-        // Read Clock pin and regenerate clock
-        detect = XGpio_DiscreteRead(&gpo, 1);
-        clk_state = (detect & 0x02) ? 0x00000000 : 0x00000001;
-        clk_state = clk_state << 1;
-        XGpio_DiscreteWrite(&gpo, 1, (clk_state & 2));
+        gpio_write(info.data, data_state);
+        clkval ^= 1;
+        gpio_write(info.clk, clkval);
 
         // Shift Incoming data to fetch next bit
         data_internal = data_internal << 1;
     }
 }
 
-void latch_data(){
+void latch_data(ledbar info){
     int i;
-    XGpio_DiscreteWrite(&gpo, 1, 0);
+    gpio_write(info.data, 0);
     delay_ms(10);
     // Generate four pulses on the data pin as per data sheet
     for (i = 0; i < 4; i++){
-        XGpio_DiscreteWrite(&gpo, 1, 1);
-        XGpio_DiscreteWrite(&gpo, 1, 0);
+        gpio_write(info.data, 1);
+        gpio_write(info.data, 0);
     }
 }
 
-void ledbar_set_level(u8 val) {
+void ledbar_set_level(ledbar info, u8 val) {
     val = 10 - val;
-    send_data(0x00);
+    send_data(info, 0x00);
     for (int i = 0; i < 10; ++i) {
-        send_data(i >= val? 0xFF: 0x00);
+        send_data(info, i >= val? 0xFF: 0x00);
     }
-    send_data(0x00);
-    send_data(0x00);
-    latch_data();
+    send_data(info, 0x00);
+    send_data(info, 0x00);
+    latch_data(info);
 }
 
-void ledbar_set_data(u8 val[10]) {
-    send_data(0x00);
+void ledbar_set_data(ledbar info, u8 val[10]) {
+    send_data(info, 0x00);
     for (int i = 0; i < 10; ++i) {
-        send_data(val[i]);
+        send_data(info, val[i]);
     }
-    send_data(0x00);
-    send_data(0x00);
-    latch_data();
+    send_data(info, 0x00);
+    send_data(info, 0x00);
+    latch_data(info);
 }
 
-void ledbar_init(unsigned char port) {
-    pmod_switch_init();
-    pmod_switch_grove_gpio(port, 0, 1);
-    XGpio_Initialize(&gpo, XPAR_GPIO_0_DEVICE_ID);
-    XGpio_SetDataDirection(&gpo, 1, 0);
+ledbar ledbar_init(unsigned char port) {
+    ledbar info;
+    info.data = gpio_connect(port, 0);
+    info.clk = gpio_connect(port, 1);
+    gpio_set_direction(info.data, GPIO_OUT);
+    gpio_set_direction(info.clk, GPIO_OUT);
+    return info;
 }
 """
 
-PmodLEDBar.dependencies.append(PmodSwitch)
+PmodLEDBar.dependencies.append(PmodGPIO)
 
 ArduinoLEDBar = Library("ArduinoLEDBar")
 
 ArduinoLEDBar.declaration = PmodLEDBar.declaration
 
 ArduinoLEDBar.definition = R"""
-#include "xgpio_l.h"
-#include "xgpio.h"
-#include "unistd.h"
 #include "arduino.h"
 
-XGpio gpo;
+typedef struct {
+    short data;
+    short clk;
+} ledbar;
 
-static int shift = 0;
-
-void send_data(u8 data){
+void send_data(ledbar info, u8 data){
     int i;
     u8 data_state, clk_state, detect, data_internal;
 
     data_internal = data;
+
+    int clkval = 0;
+    // Pad the upper 8 bits
+    for (i = 0; i < 8; ++i) {
+        clkval ^= 1;
+        gpio_write(info.data, 0);
+        gpio_write(info.clk, clkval);
+    }
+
     // Working in 8-bit mode
     for (i = 0; i < 8; i++){
         /*
@@ -143,59 +164,58 @@ void send_data(u8 data){
          * Write it to the data_pin
          */
         data_state = (data_internal & 0x80) ? 0x00000001 : 0x00000000;
-        XGpio_DiscreteWrite(&gpo, 1, data_state << shift);
-
-        // Read Clock pin and regenerate clock
-        detect = XGpio_DiscreteRead(&gpo, 1);
-        clk_state = detect ^ (2 << shift);
-        XGpio_DiscreteWrite(&gpo, 1, clk_state);
+        gpio_write(info.data, data_state);
+        clkval ^= 1;
+        gpio_write(info.clk, clkval);
 
         // Shift Incoming data to fetch next bit
         data_internal = data_internal << 1;
     }
 }
 
-void latch_data(){
+void latch_data(ledbar info){
     int i;
-    XGpio_DiscreteWrite(&gpo, 1, 0);
+    gpio_write(info.data, 0);
     delay_ms(10);
     // Generate four pulses on the data pin as per data sheet
     for (i = 0; i < 4; i++){
-        XGpio_DiscreteWrite(&gpo, 1, 1 << shift);
-        XGpio_DiscreteWrite(&gpo, 1, 0);
+        gpio_write(info.data, 1);
+        gpio_write(info.data, 0);
     }
 }
 
-void ledbar_set_level(u8 val) {
+void ledbar_set_level(ledbar info, u8 val) {
     val = 10 - val;
-    send_data(0x00);
+    send_data(info, 0x00);
     for (int i = 0; i < 10; ++i) {
-        send_data(i >= val? 0xFF: 0x00);
+        send_data(info, i >= val? 0xFF: 0x00);
     }
-    send_data(0x00);
-    send_data(0x00);
-    latch_data();
+    send_data(info, 0x00);
+    send_data(info, 0x00);
+    latch_data(info);
 }
 
-void ledbar_set_data(u8 val[10]) {
-    send_data(0x00);
+void ledbar_set_data(ledbar info, u8 val[10]) {
+    send_data(info, 0x00);
     for (int i = 0; i < 10; ++i) {
-        send_data(val[i]);
+        send_data(info, val[i]);
     }
-    send_data(0x00);
-    send_data(0x00);
-    latch_data();
+    send_data(info, 0x00);
+    send_data(info, 0x00);
+    latch_data(info);
 }
 
-void ledbar_init(unsigned char port) {
-    arduino_switch_init();
-    shift = arduino_switch_grove_gpio(port);
-    XGpio_Initialize(&gpo, XPAR_GPIO_0_DEVICE_ID);
-    XGpio_SetDataDirection(&gpo, 1, 0);
+ledbar ledbar_init(unsigned char port) {
+    ledbar info;
+    info.data = gpio_connect(port, 0);
+    info.clk = gpio_connect(port, 1);
+    gpio_set_direction(info.data, GPIO_OUT);
+    gpio_set_direction(info.clk, GPIO_OUT);
+    return info;
 }
 """
 
-ArduinoLEDBar.dependencies.append(ArduinoSwitch)
+ArduinoLEDBar.dependencies.append(ArduinoGPIO)
 
 LEDBar = Peripheral("LEDBar")
 LEDBar.declaration = PmodLEDBar.declaration
