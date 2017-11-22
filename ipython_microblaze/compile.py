@@ -33,37 +33,38 @@ from pynq import PL
 from os import path
 import tempfile
 import shutil
+from subprocess import run, PIPE
 
 from .streams import InterruptMBStream
 from .library import Peripheral
+from . import BSPs
+from . import Modules
 
 __author__ = "Peter Ogden"
 __copyright__ = "Copyright 2017, Xilinx"
 __email__ = "ogden@xilinx.com"
 
-_script_dir = path.dirname(path.realpath(__file__))
-BSP_ROOT_DIR = path.join(_script_dir, "bsp")
 
+def dependencies(source, bsp):
+    args = ['cpp', '-MM']
+    for include_path in bsp.include_path:
+        args.append('-I')
+        args.append(include_path)
+    paths = {}
+    for name, module in Modules.items():
+        for include_path in module.include_path:
+            args.append('-I')
+            args.append(include_path)
+            paths[include_path] = name
 
-class _DependencyResolution:
-    def __init__(self, libraries):
-        self.added = set()
-        self.total_libs = []
-        for l in libraries:
-            self.add_library(l)
-
-    def add_library(self, lib):
-        if lib.name not in self.added:
-            for d in lib.dependencies:
-                self.add_library(d)
-            self.total_libs.append(lib)
-            self.added.add(lib.name)
-
-
-def _resolve_dependencies(libraries):
-    resolver = _DependencyResolution(libraries)
-    return resolver.total_libs
-
+    result = run(args, stdout=PIPE, stderr=PIPE, input=source.encode())
+    if result.returncode:
+        raise RuntimeError("Preproseeor failed: \n" + result.stderr)
+    dependent_paths = result.stdout.decode()
+    dependent_modules = {v for k, v in paths.items()
+                         if dependent_paths.find(k) != -1 }
+    return [Modules[k] for k in dependent_modules]
+     
 
 class MicroblazeProgram(PynqMicroblaze):
     @staticmethod
@@ -77,46 +78,45 @@ class MicroblazeProgram(PynqMicroblaze):
         else:
             return library
 
-    def __init__(self, mb_info, program_text, libraries=[]):
-        from subprocess import run, PIPE
-        bsp_dir = path.join(BSP_ROOT_DIR, mb_info['mbtype'])
-        if not path.exists(bsp_dir):
-            raise RuntimeError("Could not find BSP for Microblaze type" +
-                               mb_info['mbtype'])
-        real_libs = [MicroblazeProgram._real_library(l, mb_info['mbtype'])
-                     for l in libraries]
-        all_libs = _resolve_dependencies(real_libs)
+    def __init__(self, mb_info, program_text, bsp=None):
+        if bsp is None:
+            if mb_info['mbtype'] not in BSPs:
+                raise RuntimeError("Could not find BSP for Microblaze type" +
+                                   mb_info['mbtype'])
+            bsp = BSPs[mb_info['mbtype']]
+
+        modules = dependencies(program_text, bsp)
 
         with tempfile.TemporaryDirectory() as tempdir:
             files = [path.join(tempdir, 'main.c')]
-            args = ['mb-gcc', '-o', path.join(tempdir, 'a.out'), '-Os',
-                    '-I', path.join(bsp_dir, 'include'),
-                    '-L', path.join(bsp_dir, 'lib'),
-                    '-lxil', f'-Wl,{bsp_dir}/lscript.ld', '-mlittle-endian',
-                    '-mcpu=v9.6', '-mxl-soft-mul', '-Wl,--no-relax']
+            args = ['mb-gcc', '-o', path.join(tempdir, 'a.out') ]
+            args.extend(bsp.cflags)
+            args.extend(bsp.sources)
+            for include_path in bsp.include_path:
+                args.append('-I')
+                args.append(include_path)
+            for lib_path in bsp.library_path:
+                args.append('-L')
+                args.append(lib_path)
+            for lib in bsp.libraries:
+                args.append(f'-l{lib}')
+            args.append(f'-Wl,{bsp.linker_script}')
+            args.extend(bsp.ldflags)
+
+            for module in modules:
+                files.extend(module.sources)
+                for include_path in module.include_path:
+                     args.append('-I')
+                     args.append(include_path)
+                for lib_path in module.library_path:
+                     args.append('-L')
+                     args.append(lib_path)
+                for lib in module.libraries:
+                     args.append(f'-l{lib}')
 
             with open(path.join(tempdir, 'main.c'), 'w') as f:
-                for lib in all_libs:
-                    deps = _resolve_dependencies(lib.dependencies)
-                    f.write(f'#line 1 "{lib.name}.declaration"\n')
-                    f.write(lib.declaration)
-                    libsrc = path.join(tempdir, f"{lib.name}.c")
-                    with open(libsrc, 'w') as libfile:
-                        for d in deps:
-                            libfile.write(f'#line 1 "{d.name}.declaration"\n')
-                            libfile.write(d.declaration)
-                        libfile.write(f'#line 1 "{lib.name}.definition"\n')
-                        libfile.write(lib.definition)
-                    args.append(path.join(tempdir, f"{lib.name}.c"))
-                    for headerdir in {path.dirname(h) for h in lib.headers}:
-                        args.append('-I')
-                        args.append(headerdir)
-                    for source in lib.sources:
-                        files.append(source)
-                f.write('#line 1 "program_text"\n')
+                f.write('#line 1 "cell_magic"\n')
                 f.write(program_text)
-            shutil.copy(path.join(tempdir, 'main.c'), '/tmp/last.c')
-
             result = run(args + files, stdout=PIPE, stderr=PIPE)
             if result.returncode:
                 raise RuntimeError(result.stderr.decode())
@@ -131,6 +131,9 @@ class MicroblazeProgram(PynqMicroblaze):
 
             super().__init__(mb_info, path.join(tempdir, 'a.bin'))
             self.stream = InterruptMBStream(self)
+            self.read = self.stream.read
+            self.write = self.stream.write
+            self.read_async = self.stream.read_async
 
     def reset(self):
         PL.client_request()

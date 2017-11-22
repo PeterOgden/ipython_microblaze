@@ -334,3 +334,22 @@ void OledDvrInit() {
     // Default the character routines to automatically update the display
     fOledCharUpdate = 1;
 }
+
+void oled_init() {
+    OledInit();
+    OledDvrInit();
+    OledClearBuffer();
+    OledUpdate();
+}
+
+void oled_clear() {
+    OledClearBuffer();
+    OledUpdate();
+}
+
+void oled_print_string(char* string, int x, int y) {
+    OledSetCursor(x, y);
+    OledPutString(string);
+    OledUpdate();
+}
+

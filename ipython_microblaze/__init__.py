@@ -31,6 +31,8 @@ __author__ = "Peter Ogden"
 __copyright__ = "Copyright 2017, Xilinx"
 __email__ = "ogden@xilinx.com"
 
+from .bsp import BSPs
+from .bsp import Modules
 from .compile import MicroblazeProgram
 
 from IPython.core.magic import cell_magic, Magics, magics_class
@@ -51,14 +53,13 @@ class MicroblazeMagics(Magics):
     @cell_magic
     def microblaze(self, line, cell):
         try:
-            mb_name, var, *lib_names = line.split(' ')
+            mb_name, var, *junk = line.split(' ')
         except:
             return HTML("<pre>Usage: %%microblaze PMOD variable [libraries]</pre>")
         
         mb_info = self.name2obj(mb_name)
-        libraries = [self.name2obj(l) for l in lib_names]
         try:
-            program = MicroblazeProgram(mb_info, "\n" + cell, libraries)
+            program = MicroblazeProgram(mb_info, "\n" + cell)
         except RuntimeError as r:
             return HTML("<pre>Compile FAILED\n" + r.args[0] + "</pre>")
             return None
@@ -81,12 +82,3 @@ if instance:
     get_ipython().register_magics(MicroblazeMagics)
     display_javascript(js, raw=True)
 
-from .grove_adc import GroveADC
-from .grove_ledbar import LEDBar
-from .pmod_oled import PmodOLED
-from .grove_i2c import I2C
-from .grove_gpio import GPIO
-from .grove_pwm import PWM
-from .grove_analog import Analog
-from .library import Library
-from .library import Peripheral
