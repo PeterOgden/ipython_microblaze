@@ -75,9 +75,13 @@ ssize_t mailbox_write(int file, const void* ptr, size_t len) {
 	int buf_size = descriptors[file].size;
 
 	int available = 0;
-	while (available == 0) {
+	// The BRAM can produce rubbish when a read/write collision happens
+	// so read twice to make sure that the available data if valid.
+	int last_available = 0;
+	while (available == 0 || last_available != available) {
 		available = *status - *ctrl - 1;
 		if (available < 0) available += buf_size;
+		last_available = available;
 	}
 	int write_ptr = *ctrl;
 	int to_write = len < available? len : available;
@@ -110,10 +114,14 @@ ssize_t mailbox_read(int file, void* ptr, size_t len) {
 	int buf_size = descriptors[file].size;
 
 	int available = 0;
+	// The BRAM can produce rubbish when a read/write collision happens
+	// so read twice to make sure that the available data if valid.
+	int last_available = 0;
 	// Spin waiting for at least one byte to be available
-	while (available == 0) {
+	while (available == 0 || last_available != available) {
 		available = *ctrl - *status;
 		if (available < 0) available += buf_size;
+		last_available = available;
 	}
 	int read_ptr = *status;
 	int to_read = len < available? len : available;
