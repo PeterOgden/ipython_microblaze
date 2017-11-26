@@ -1,13 +1,11 @@
 #pragma once
 
-#include <iop.h>
+#include <mbio.h>
 
-typedef struct {
-    gpio data;
-    gpio clk;
-} ledbar;
+typedef unsigned int ledbar;
 
-ledbar ledbar_init(unsigned char port);
+ledbar ledbar_open_grove(unsigned char port);
+ledbar ledbar_open(mb_gpio data, mb_gpio clk);
 void ledbar_set_level(ledbar, unsigned char i);
-void ledbar_set_data(ledbar, unsigned char data[10]);
+void ledbar_set_data(ledbar, const unsigned char* data);
 
