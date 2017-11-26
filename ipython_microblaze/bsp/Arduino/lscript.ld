@@ -17,7 +17,7 @@ _HEAP_SIZE = DEFINED(_HEAP_SIZE) ? _HEAP_SIZE : 0x800;
 
 MEMORY
 {
-   iop3_mb3_lmb_lmb_bram_if_cntlr : ORIGIN = 0x50, LENGTH = 0xEFB0
+   iop1_mb1_lmb_lmb_bram_if_cntlr : ORIGIN = 0x50, LENGTH = 0xEFB0
 }
 
 /* Specify the default entry point to the program */
@@ -48,15 +48,15 @@ SECTIONS
    *(.text)
    *(.text.*)
    *(.gnu.linkonce.t.*)
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .init : {
    KEEP (*(.init))
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .fini : {
    KEEP (*(.fini))
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .ctors : {
    __CTOR_LIST__ = .;
@@ -67,7 +67,7 @@ SECTIONS
    KEEP (*(.ctors))
    __CTOR_END__ = .;
    ___CTORS_END___ = .;
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .dtors : {
    __DTOR_LIST__ = .;
@@ -78,7 +78,7 @@ SECTIONS
    KEEP (*(.dtors))
    PROVIDE(__DTOR_END__ = .);
    PROVIDE(___DTORS_END___ = .);
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .rodata : {
    __rodata_start = .;
@@ -86,7 +86,7 @@ SECTIONS
    *(.rodata.*)
    *(.gnu.linkonce.r.*)
    __rodata_end = .;
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .sdata2 : {
    . = ALIGN(8);
@@ -96,7 +96,7 @@ SECTIONS
    *(.gnu.linkonce.s2.*)
    . = ALIGN(8);
    __sdata2_end = .;
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .sbss2 : {
    __sbss2_start = .;
@@ -104,7 +104,7 @@ SECTIONS
    *(.sbss2.*)
    *(.gnu.linkonce.sb2.*)
    __sbss2_end = .;
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .data : {
    . = ALIGN(4);
@@ -113,31 +113,31 @@ SECTIONS
    *(.data.*)
    *(.gnu.linkonce.d.*)
    __data_end = .;
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .got : {
    *(.got)
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .got1 : {
    *(.got1)
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .got2 : {
    *(.got2)
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .eh_frame : {
    *(.eh_frame)
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .jcr : {
    *(.jcr)
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .gcc_except_table : {
    *(.gcc_except_table)
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .sdata : {
    . = ALIGN(8);
@@ -146,7 +146,7 @@ SECTIONS
    *(.sdata.*)
    *(.gnu.linkonce.s.*)
    __sdata_end = .;
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .sbss (NOLOAD) : {
    . = ALIGN(4);
@@ -156,7 +156,7 @@ SECTIONS
    *(.gnu.linkonce.sb.*)
    . = ALIGN(8);
    __sbss_end = .;
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .tdata : {
    __tdata_start = .;
@@ -164,7 +164,7 @@ SECTIONS
    *(.tdata.*)
    *(.gnu.linkonce.td.*)
    __tdata_end = .;
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .tbss : {
    __tbss_start = .;
@@ -172,7 +172,7 @@ SECTIONS
    *(.tbss.*)
    *(.gnu.linkonce.tb.*)
    __tbss_end = .;
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .bss (NOLOAD) : {
    . = ALIGN(4);
@@ -183,7 +183,7 @@ SECTIONS
    *(COMMON)
    . = ALIGN(4);
    __bss_end = .;
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 _SDA_BASE_ = __sdata_start + ((__sbss_end - __sdata_start) / 2 );
 
@@ -197,7 +197,7 @@ _SDA2_BASE_ = __sdata2_start + ((__sbss2_end - __sdata2_start) / 2 );
    _heap_start = .;
    . += _HEAP_SIZE;
    _heap_end = .;
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 .stack (NOLOAD) : {
    _stack_end = .;
@@ -205,7 +205,7 @@ _SDA2_BASE_ = __sdata2_start + ((__sbss2_end - __sdata2_start) / 2 );
    . = ALIGN(8);
    _stack = .;
    __stack = _stack;
-} > iop3_mb3_lmb_lmb_bram_if_cntlr
+} > iop1_mb1_lmb_lmb_bram_if_cntlr
 
 _end = .;
 }

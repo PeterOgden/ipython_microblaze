@@ -63,7 +63,7 @@
 // Base address of QSPI[0]
 #define SPI_BASEADDR      XPAR_SPI_0_BASEADDR
 // Base address of switch
-#define SWITCH_BASEADDR   XPAR_IOP1_MB1_PMOD_IO_SWITCH_S00_AXI_BASEADDR
+#define SWITCH_BASEADDR   XPAR_C_PMOD_IO_SWITCH_0_S00_AXI_BASEADDR
 #define GPIO             XPAR_GPIO_0_BASEADDR
 
 // command from A9 to microblaze

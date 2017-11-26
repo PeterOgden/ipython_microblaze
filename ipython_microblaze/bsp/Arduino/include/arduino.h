@@ -66,7 +66,7 @@
 // Base address of direct SPI which uses ISP connector
 #define DIRECT_SPI_BASEADDR      XPAR_SPI_0_BASEADDR
 // Base address of switch
-#define SWITCH_BASEADDR   XPAR_IOP3_ARDUINO_IO_SWITCH_0_S_AXI_BASEADDR
+#define SWITCH_BASEADDR   XPAR_C_ARDUINO_IO_SWITCH_0_S_AXI_BASEADDR
 
 // command from A9 to microblaze
 #define MAILBOX_CMD_ADDR       (*(volatile u32 *)(0x0000FFFC))
