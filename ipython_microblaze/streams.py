@@ -72,12 +72,14 @@ class SimpleMBChannel:
         available = (read - written - 1 + 2 * self.length) % self.length
         return available
 
-    def read(self):
+    def read_upto(self, n=-1):
         written = int(self._safe_control_read(0))
         read = self.control_array[1]
         available = (written - read + self.length) % self.length
         if available == 0:
-            return None
+            return b''
+        if n > 0 and available > n:
+            available = n
         read_array = np.empty([available], dtype=np.uint8)
         end_block = min(available, self.length - read)
         read_array[0:end_block] = self.data_array[read:read + end_block]
@@ -86,6 +88,13 @@ class SimpleMBChannel:
                 self.data_array[0:available - end_block]
         self.control_array[1] = (read + available) % self.length
         return read_array.tobytes()
+
+    def read(self, n=-1):
+        data = self.read_upto(n)
+        while len(data) != n and n != -1:
+            assert(len(data) < n)
+            data += self.read_upto(n-len(data))
+        return data
 
     def _safe_control_read(self, index):
         last_value = self.control_array[index]
@@ -103,8 +112,8 @@ class SimpleMBStream:
         self.write_channel = SimpleMBChannel(iop.mmio.mem, offset=0xF000,
                                              length=0x800)
 
-    def read(self):
-        return self.read_channel.read()
+    def read(self, n=-1):
+        return self.read_channel.read(n)
 
     def write(self, b):
         return self.write_channel.write(b)
