@@ -85,6 +85,8 @@ def preprocess(source, bsp=None, mb_info=None):
 
 class MicroblazeProgram(PynqMicroblaze):
     def __init__(self, mb_info, program_text, bsp=None):
+        if hasattr(mb_info, 'mb_info'):
+            mb_info = mb_info.mb_info
         if bsp is None:
             if mb_info['mbtype'] not in BSPs:
                 raise RuntimeError("Could not find BSP for Microblaze type" +
