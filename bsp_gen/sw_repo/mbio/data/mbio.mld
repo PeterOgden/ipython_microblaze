@@ -1,0 +1,9 @@
+OPTION psf_version = 2.1;
+
+BEGIN LIBRARY mbio
+  OPTION copyfiles = all;
+  OPTION REQUIRES_OS = (standalone);
+  OPTION desc = "Microblaze IO abstraction layer";
+  OPTION NAME = mbio;
+  OPTION VERSION = 0.1;
+END LIBRARY
