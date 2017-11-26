@@ -75,7 +75,12 @@ class BSPInstance:
         self.library_path = [
             path.join(root, 'lib')
         ]
-        self.libraries = ['xil']
+        self.libraries = ['mbio', 'xil']
+#        for f in listdir(self.library_path[0]):
+#             match = re.match('lib(.*)\.(?:a|so)', f)
+#             if match:
+#                  self.libraries.append(match.group(1))
+
         self.linker_script = path.join(root, 'lscript.ld')
         self.cflags = [
             '-Os', '-lxil', '-mlittle-endian',

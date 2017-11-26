@@ -65,18 +65,25 @@ def dependencies(source, bsp):
     return [Modules[k] for k in dependent_modules]
      
 
-class MicroblazeProgram(PynqMicroblaze):
-    @staticmethod
-    def _real_library(library, mbtype):
-        if type(library) is Peripheral:
-            if mbtype in library.implementations:
-                return library.implementations[mbtype]
-            else:
-                raise RuntimeError("Could not find a implementation of " +
-                                   library.name + " for mbtype " + mbtype)
-        else:
-            return library
+def preprocess(source, bsp=None, mb_info=None):
+    if bsp is None:
+        if mb_info is None:
+            raise RuntimeError("Must provide either a BSP or mb_info")
+        bsp = BSPs[mb_info['mbtype']]
 
+    args = ['cpp']
+    for include_path in bsp.include_path:
+        args.append('-I')
+        args.append(include_path)
+    for name, module in Modules.items():
+        for include_path in module.include_path:
+            args.append('-I')
+            args.append(include_path)
+
+    result = run(args, stdout=PIPE, stderr=PIPE, input=source.encode())
+    return result.stdout.decode()
+
+class MicroblazeProgram(PynqMicroblaze):
     def __init__(self, mb_info, program_text, bsp=None):
         if bsp is None:
             if mb_info['mbtype'] not in BSPs:
@@ -85,7 +92,7 @@ class MicroblazeProgram(PynqMicroblaze):
             bsp = BSPs[mb_info['mbtype']]
 
         modules = dependencies(program_text, bsp)
-
+        lib_args = []
         with tempfile.TemporaryDirectory() as tempdir:
             files = [path.join(tempdir, 'main.c')]
             args = ['mb-gcc', '-o', path.join(tempdir, 'a.out') ]
@@ -95,10 +102,10 @@ class MicroblazeProgram(PynqMicroblaze):
                 args.append('-I')
                 args.append(include_path)
             for lib_path in bsp.library_path:
-                args.append('-L')
-                args.append(lib_path)
+                lib_args.append('-L')
+                lib_args.append(lib_path)
             for lib in bsp.libraries:
-                args.append(f'-l{lib}')
+                lib_args.append(f'-l{lib}')
             args.append(f'-Wl,{bsp.linker_script}')
             args.extend(bsp.ldflags)
 
@@ -108,15 +115,15 @@ class MicroblazeProgram(PynqMicroblaze):
                      args.append('-I')
                      args.append(include_path)
                 for lib_path in module.library_path:
-                     args.append('-L')
-                     args.append(lib_path)
+                     lib_args.append('-L')
+                     lib_args.append(lib_path)
                 for lib in module.libraries:
-                     args.append(f'-l{lib}')
+                     lib_args.append(f'-l{lib}')
 
             with open(path.join(tempdir, 'main.c'), 'w') as f:
                 f.write('#line 1 "cell_magic"\n')
                 f.write(program_text)
-            result = run(args + files, stdout=PIPE, stderr=PIPE)
+            result = run(args + files + lib_args, stdout=PIPE, stderr=PIPE)
             if result.returncode:
                 raise RuntimeError(result.stderr.decode())
             shutil.copy(path.join(tempdir, 'a.out'), '/tmp/last.elf')
