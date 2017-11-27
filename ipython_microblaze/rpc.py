@@ -510,7 +510,7 @@ class MicroblazeRPC:
         self._mb.reset()
 
 
-class MbioBinding(MicroblazeRPC):
+class MbioRPC(MicroblazeRPC):
     """Provides access to the basic `mbio` interface through python
 
     """
@@ -531,7 +531,7 @@ class MbioBinding(MicroblazeRPC):
         super().__init__(iop, "\n".join(header_text))
 
 
-class IopSwitchBinding(MicroblazeRPC):
+class IopRPC(MicroblazeRPC):
     """Provides access to the basic `mbio` and `iop_switch`
     interfaces through python
 
@@ -547,7 +547,7 @@ class IopSwitchBinding(MicroblazeRPC):
             Names of the modules to add to the base API
 
         """
-        header_text = ["#include <mbio.h>", "#include <iop_switch.h>"]
+        header_text = ["#include <mbio.h>", "#include <iop.h>"]
         for module in modules:
             header_text.append(f'#include <{module}.h>')
         super().__init__(iop, "\n".join(header_text))

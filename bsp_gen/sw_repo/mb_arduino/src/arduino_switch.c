@@ -1,4 +1,4 @@
-#include <iop_switch.h>
+#include <iop.h>
 #include <arduino.h>
 #include <mbio.h>
 
@@ -39,33 +39,33 @@ static void commit_assignments() {
 
 }
 
+__attribute__((constructor(1000)))
 void iop_switch_init() {
-    mb_io_init();
     commit_assignments();
-    mb_timer delay_timer = mb_timer_open(5);
-    mb_set_delay_timer(delay_timer, 1);
+    timer delay_timer = timer_open(5);
+    timer_set_as_default(delay_timer, 1);
 }
 
-mb_gpio iop_switch_gpio_raw(unsigned char pin) {
+gpio gpio_open_iop_pin(unsigned char pin) {
     digital_pins[pin] = D_GPIO;
     commit_assignments();
-    return mb_gpio_open_pin(XPAR_IOP3_MB3_GPIO_SUBSYSTEM_MB3_ARDUINO_GPIO_D13_D0_A5_A0_DEVICE_ID, 0, pin);
+    return gpio_open_pin(XPAR_IOP3_MB3_GPIO_SUBSYSTEM_MB3_ARDUINO_GPIO_D13_D0_A5_A0_DEVICE_ID, 0, pin);
 }
-mb_gpio iop_switch_gpio_grove(unsigned char port, unsigned char wire) {
-    return iop_switch_gpio_raw(pin_offsets[port] + wire);
+gpio gpio_open_iop_grove(unsigned char port, unsigned char wire) {
+    return gpio_open_iop_pin(pin_offsets[port] + wire);
 }
 
 static const unsigned char adc_offset[6] = {
     1, 9, 6, 15, 5, 13
 };
 
-mb_adc iop_switch_analog_raw(unsigned char pin) {
+analog analog_open_iop_pin(unsigned char pin) {
     analog_pins[pin] = A_GPIO;
     commit_assignments();
-    return mb_adc_open(adc_offset[pin]);
+    return analog_open(adc_offset[pin]);
 }
-mb_adc iop_switch_analog_grove(unsigned char port, unsigned char wire) {
-    return iop_switch_analog_raw(analog_offsets[port] + wire);
+analog analog_open_iop_grove(unsigned char port, unsigned char wire) {
+    return analog_open_iop_pin(analog_offsets[port] + wire);
 }
 
 // D3, D5, D6, D9, D10, D11
@@ -74,21 +74,21 @@ static const char pwm_offsets[14] = {
     -1, -1, 3, 4, 5, -1, -1
 };
 
-mb_timer iop_switch_pwm_raw(unsigned char pin) {
+timer timer_open_iop_pin(unsigned char pin) {
     char offset = pwm_offsets[pin];
     if (offset == -1) return ASSIGN_FAILED;
     digital_pins[pin] = D_PWM;
     commit_assignments();
-    return mb_timer_open(offset);
+    return timer_open(offset);
 }
 
-mb_timer iop_switch_pwm_grove(unsigned char port, unsigned char wire) {
-    return iop_switch_pwm_raw(pin_offsets[port] + wire);
+timer timer_open_iop_grove(unsigned char port, unsigned char wire) {
+    return timer_open_iop_pin(pin_offsets[port] + wire);
 }
 
-mb_i2c iop_switch_i2c_raw(unsigned char scl, unsigned char sda) {
-    return mb_i2c_open(XPAR_IOP3_MB3_IIC_SUBSYSTEM_MB3_IIC_PL_SW_DEVICE_ID);
+i2c i2c_open_iop_pins(unsigned char scl, unsigned char sda) {
+    return i2c_open(XPAR_IOP3_MB3_IIC_SUBSYSTEM_MB3_IIC_PL_SW_DEVICE_ID);
 }
-mb_i2c iop_switch_i2c_grove(unsigned char port) {
-    return mb_i2c_open(XPAR_IOP3_MB3_IIC_SUBSYSTEM_MB3_IIC_PL_SW_DEVICE_ID);
+i2c i2c_open_iop_grove(unsigned char port) {
+    return i2c_open(XPAR_IOP3_MB3_IIC_SUBSYSTEM_MB3_IIC_PL_SW_DEVICE_ID);
 }

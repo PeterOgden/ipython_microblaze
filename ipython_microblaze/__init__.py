@@ -35,8 +35,8 @@ from .bsp import BSPs
 from .bsp import Modules
 from .compile import MicroblazeProgram
 from .rpc import MicroblazeRPC
-from .rpc import MbioBinding
-from .rpc import IopSwitchBinding
+from .rpc import MbioRPC
+from .rpc import IopRPC
 
 from IPython.core.magic import cell_magic, Magics, magics_class
 from IPython import get_ipython

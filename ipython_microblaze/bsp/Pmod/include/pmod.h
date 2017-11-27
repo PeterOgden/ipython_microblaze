@@ -106,8 +106,8 @@ void delay_ms(u32 ms_count);
 #define SPI_RELEASE (XSP_CR_MANUAL_SS_MASK| \
             XSP_CR_MASTER_MODE_MASK|XSP_CR_ENABLE_MASK)
 
-void spi_init(u32 BaseAddress, u32 clk_phase, u32 clk_polarity);
-void spi_transfer(u32 BaseAddress, int bytecount, 
+void raw_spi_init(u32 BaseAddress, u32 clk_phase, u32 clk_polarity);
+void raw_spi_transfer(u32 BaseAddress, int bytecount, 
                     u8* readBuffer, u8* writeBuffer);
 
 /* 

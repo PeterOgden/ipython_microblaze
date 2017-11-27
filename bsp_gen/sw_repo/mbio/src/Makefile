@@ -16,7 +16,7 @@ OUTS = *.o
 MBIO_SRCS := $(wildcard *.c)
 MBIO_OBJS = $(addprefix $(MBIO_DIR)/, $(MBIO_SRCS:%.c=%.o))
 
-INCLUDEFILES=$(MBIO_DIR)/mbio.h
+INCLUDEFILES=$(MBIO_DIR)/*.h
 
 libs: libmbio.a
 

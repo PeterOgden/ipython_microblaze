@@ -54,7 +54,7 @@
 // The Timer Counter instance
 XTmrCtr TimerInst_0;
 
-void spi_transfer(u32 BaseAddress, int bytecount, 
+void raw_spi_transfer(u32 BaseAddress, int bytecount, 
                     u8* readBuffer, u8* writeBuffer) {
     int i;
 
@@ -80,7 +80,7 @@ void spi_transfer(u32 BaseAddress, int bytecount,
     XSpi_WriteReg(BaseAddress, XSP_SSR_OFFSET, 0xff);
 }
 
-void spi_init(u32 BaseAddress, u32 clk_phase, u32 clk_polarity){
+void raw_spi_init(u32 BaseAddress, u32 clk_phase, u32 clk_polarity){
     u32 Control;
 
     // Soft reset SPI
@@ -253,6 +253,6 @@ int tmrctr_init(void) {
 }
 
 void pmod_init(u32 clk_phase, u32 clk_polarity) {
-    spi_init(SPI_BASEADDR, clk_phase, clk_polarity);
+    raw_spi_init(SPI_BASEADDR, clk_phase, clk_polarity);
     tmrctr_init();
 }

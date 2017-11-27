@@ -28,6 +28,7 @@
 #   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
+import struct
 
 __author__ = "Peter Ogden"
 __copyright__ = "Copyright 2017, Xilinx"
@@ -104,6 +105,11 @@ class SimpleMBChannel:
             value = self.control_array[index]
         return value
 
+_short_struct = struct.Struct('h')
+_ushort_struct = struct.Struct('H')
+_int_struct = struct.Struct('i')
+_uint_struct = struct.Struct('I')
+_float_struct = struct.Struct('f')
 
 class SimpleMBStream:
     def __init__(self, iop):
@@ -118,12 +124,61 @@ class SimpleMBStream:
     def write(self, b):
         return self.write_channel.write(b)
 
+    def write_byte(self, b):
+        return self.write(bytes([b]))
+
+    def write_int16(self, i):
+        return self.write(_short_struct.pack(i))
+
+    def write_int32(self, i):
+        return self.write(_int_struct.pack(i))
+
+    def write_uint16(self, u):
+        return self.write(_ushort_struct.pack(u))
+
+    def write_uint32(self, u):
+        return self.write(_uint_struct.pack(u))
+
+    def write_string(self, s):
+        data = _ushort_struct.pack(len(s)) + s
+        return self.write(data)
+
+    def write_float(self, f):
+        return self.write(_float_struct.pack(f))
+
+    def write_address(self, p, adjust=True):
+        if adjust:
+            p = p | 0x20000000
+        return self.write_uint32(p)
+
     def bytes_available(self):
         return self.read_channel.bytes_available()
 
     def buffer_space(self):
         return self.write_channel.buffer_space()
 
+    def read_byte(self):
+        return self.read(1)[0]
+
+    def read_int16(self):
+        return _short_struct.unpack(self.read(2))[0]
+
+    def read_int32(self):
+        return _int_struct.unpack(self.read(4))[0]
+
+    def read_uint16(self):
+        return _ushort_struct.unpack(self.read(2))[0]
+
+    def read_uint32(self):
+        return _uint_struct.unpack(self.read(4))[0]
+
+    def read_string(self):
+        length = _ushort_struct.unpack(self.read(2))[0]
+        return self.read(length)
+
+    def read_float(self):
+        return _float_struct.unpack(self.read(4))[0]
+        
 
 class InterruptMBStream(SimpleMBStream):
     def __init__(self, iop):

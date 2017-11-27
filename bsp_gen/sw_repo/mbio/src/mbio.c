@@ -6,7 +6,7 @@
 
 #include <xgpio.h>
 
-// mb_gpio bit format:
+// gpio bit format:
 // 4:0 low bit
 // 9:5 high bit
 // 10:10 channel
@@ -21,20 +21,20 @@ typedef union {
 
 static XGpio _gpio_devices[XPAR_XGPIO_NUM_INSTANCES];
 
-int mb_gpio_num_devices() {
+int gpio_num_devices() {
     return XPAR_XGPIO_NUM_INSTANCES;
 }
 
-int mb_gpio_channels(int index) {
+int gpio_channels(int index) {
     XGpio_Config* cfg = XGpio_LookupConfig(index);
     if (cfg->IsDual) return 2;
     else return 1;
 }
 
-mb_gpio mb_gpio_open_pin(int index, int channel, int pin) {
-    return mb_gpio_open_range(index, channel, pin, pin);
+gpio gpio_open_pin(int index, int channel, int pin) {
+    return gpio_open_range(index, channel, pin, pin);
 }
-mb_gpio mb_gpio_open_range(int index, int channel, int low, int high) {
+gpio gpio_open_range(int index, int channel, int low, int high) {
     if (low >= 32) return -1;
     if (high >= 32) return -1;
     if (low > high) return -1;
@@ -47,8 +47,8 @@ mb_gpio mb_gpio_open_range(int index, int channel, int low, int high) {
     return assignment.packed;
 }
 
-mb_gpio mb_gpio_open_all(int index, int channel) {
-    return mb_gpio_open_range(index, channel, 0, 31);
+gpio gpio_open_all(int index, int channel) {
+    return gpio_open_range(index, channel, 0, 31);
 }
 
 static unsigned int _generate_mask(_gpio assignment) {
@@ -57,7 +57,7 @@ static unsigned int _generate_mask(_gpio assignment) {
     return high_mask - low_mask;
 }
 
-void mb_gpio_set_direction(mb_gpio dev, int direction) {
+void gpio_set_direction(gpio dev, int direction) {
     _gpio assignment;
     assignment.packed = dev;
     XGpio* device = _gpio_devices + assignment.gpio.device;
@@ -71,7 +71,7 @@ void mb_gpio_set_direction(mb_gpio dev, int direction) {
     XGpio_SetDataDirection(device, assignment.gpio.channel + 1, directions);
 }
 
-void mb_gpio_write(mb_gpio dev, int val) {
+void gpio_write(gpio dev, int val) {
     _gpio assignment;
     assignment.packed = dev;
     XGpio* device = _gpio_devices + assignment.gpio.device;
@@ -83,7 +83,7 @@ void mb_gpio_write(mb_gpio dev, int val) {
     XGpio_DiscreteWrite(device, assignment.gpio.channel + 1, new_val);
 }
 
-int mb_gpio_read(mb_gpio dev) {
+int gpio_read(gpio dev) {
     _gpio assignment;
     assignment.packed = dev;
     XGpio* device = _gpio_devices + assignment.gpio.device;
@@ -101,31 +101,31 @@ static void gpio_init() {
 
 #else // GPIO Definitions
 
-int mb_gpio_num_devices() {
+int gpio_num_devices() {
     return 0;
 }
 
-mb_gpio mb_gpio_open_pin(int index, int pin, int channel) {
+gpio gpio_open_pin(int index, int pin, int channel) {
     return -1;
 }
 
-mb_gpio mb_gpio_open_range(int index, int low, int high, int channel) {
+gpio gpio_open_range(int index, int low, int high, int channel) {
     return -1;
 }
 
-mb_gpio mb_gpio_open_all(int index, int channel) {
+gpio gpio_open_all(int index, int channel) {
     return -1;
 }
 
-void mb_gpio_set_direction(mb_gpio dev, int direction) {
+void gpio_set_direction(gpio dev, int direction) {
 
 }
 
-void mb_gpio_write(mb_gpio dev, int val) {
+void gpio_write(gpio dev, int val) {
 
 }
 
-int mb_gpio_read(mb_gpio dev) {
+int gpio_read(gpio dev) {
     return -1;
 }
 
@@ -142,19 +142,19 @@ static void gpio_init() {
 
 static unsigned int _i2c_devices[XPAR_XIIC_NUM_INSTANCES];
 
-int mb_i2c_num_devices() {
+int i2c_num_devices() {
     return XPAR_XIIC_NUM_INSTANCES;
 }
 
-mb_i2c mb_i2c_open(int index) {
+i2c i2c_open(int index) {
     if (index >= XPAR_XIIC_NUM_INSTANCES) return -1;
     return index;
 }
-int mb_i2c_read(mb_i2c device, unsigned char address, char* data, int length) {
+int i2c_read(i2c device, unsigned char address, char* data, int length) {
     if (device >= XPAR_XIIC_NUM_INSTANCES) return -1;
     return XIic_Recv(_i2c_devices[device], address, (unsigned char*)data, length, XIIC_STOP);
 }
-int mb_i2c_write(mb_i2c device, unsigned char address, const char* data, int length) {
+int i2c_write(i2c device, unsigned char address, const char* data, int length) {
     if (device >= XPAR_XIIC_NUM_INSTANCES) return -1;
     return XIic_Send(_i2c_devices[device], address, (unsigned char*)data, length, XIIC_STOP);
 }
@@ -167,16 +167,16 @@ static void i2c_init() {
 
 #else //I2C Definitions
 
-int mb_i2c_num_devices() {
+int i2c_num_devices() {
     return 0;
 }
-mb_i2c mb_i2c_open(int index) {
+i2c i2c_open(int index) {
     return -1;
 }
-int mb_i2c_read(mb_i2c device, unsigned char address, char* data, int length) {
+int i2c_read(i2c device, unsigned char address, char* data, int length) {
     return -1;
 }
-int mb_i2c_write(mb_i2c device, unsigned char address, const char* data, int length) {
+int i2c_write(i2c device, unsigned char address, const char* data, int length) {
     return -1;
 }
 static void i2c_init() {
@@ -234,17 +234,17 @@ static void _spi_init(u32 BaseAddress, u32 clk_phase, u32 clk_polarity){
     XSpi_WriteReg(BaseAddress, XSP_CR_OFFSET, Control);
 }
 
-int mb_spi_num_devices() {
+int spi_num_devices() {
     return XPAR_XSPI_NUM_INSTANCES;
 }
 
-mb_spi mp_spi_open(int index, int clk_phase, int clk_polarity) {
+spi mp_spi_open(int index, int clk_phase, int clk_polarity) {
     if (index >= XPAR_XSPI_NUM_INSTANCES) return -1;
     _spi_init(_spi_devices[index], clk_phase, clk_polarity);
     return index;
     
 }
-int mb_spi_transfer(mb_spi device, const char* in_data, char* out_data, int length) {
+int spi_transfer(spi device, const char* in_data, char* out_data, int length) {
     if (device >= XPAR_XSPI_NUM_INSTANCES) return -1;
     _spi_transfer(_spi_devices[device], length, (unsigned char*)in_data, (unsigned char*)out_data);
     return 0;
@@ -258,13 +258,13 @@ static void spi_device_init() {
 }
 #else // SPI Definitions
 
-int mb_spi_num_devices() {
+int spi_num_devices() {
     return 0;
 }
-mb_spi mp_spi_open(int index, int clk_phase, int clk_polarity) {
+spi mp_spi_open(int index, int clk_phase, int clk_polarity) {
     return -1;
 }
-int mb_spi_read(mb_spi device, const char* in_data, char* out_data, int length) {
+int spi_read(spi device, const char* in_data, char* out_data, int length) {
     return -1;
 }
 static void spi_init() {
@@ -279,16 +279,16 @@ static void spi_init() {
 
 static XTmrCtr _timer_devices[XPAR_XTMRCTR_NUM_INSTANCES];
 
-int mb_timer_num_devices() {
+int timer_num_devices() {
     return XPAR_XTMRCTR_NUM_INSTANCES;
 }
 
-mb_timer mb_timer_open(int index) {
+timer timer_open(int index) {
     if (index >= XPAR_XTMRCTR_NUM_INSTANCES) return -1;
     return index;
 }
 
-void mb_timer_delay_us(mb_timer timer, int channel, int usdelay) {
+void timer_delay_us(timer timer, int channel, int usdelay) {
     if (timer >= XPAR_XTMRCTR_NUM_INSTANCES) return;
 
     XTmrCtr* device = _timer_devices + timer;
@@ -301,7 +301,7 @@ void mb_timer_delay_us(mb_timer timer, int channel, int usdelay) {
     XTmrCtr_Stop(device, channel);
 }
 
-void mb_timer_pwm_generate(mb_timer timer, int pulse, int period) {
+void timer_pwm_generate(timer timer, int pulse, int period) {
     unsigned int base_addr = _timer_devices[timer].BaseAddress;
     if (XTmrCtr_ReadReg(base_addr, 0, XTC_TCSR_OFFSET) != 0x296) {
         XTmrCtr_WriteReg(base_addr, 0, XTC_TCSR_OFFSET, 0x296);
@@ -311,7 +311,7 @@ void mb_timer_pwm_generate(mb_timer timer, int pulse, int period) {
     XTmrCtr_WriteReg(base_addr, 1, XTC_TLR_OFFSET, pulse);
 }
 
-void mb_timer_pwm_stop(mb_timer timer) {
+void timer_pwm_stop(timer timer) {
     unsigned int base_addr = _timer_devices[timer].BaseAddress;
     XTmrCtr_WriteReg(base_addr, 0, XTC_TCSR_OFFSET, 0);
     XTmrCtr_WriteReg(base_addr, 1, XTC_TCSR_OFFSET, 0);
@@ -329,22 +329,22 @@ static void timer_init() {
 
 #else // Timer Definitions
 
-int mb_timer_num_devices() {
+int timer_num_devices() {
     return 0;
 }
 
-mb_timer mb_timer_open(int index) {
+timer timer_open(int index) {
     return -1;
 }
 
-void mb_timer_delay_us(mb_timer timer, int channel, int usdelay) {
+void timer_delay_us(timer timer, int channel, int usdelay) {
 }
 
-void mb_timer_pwm_generate(mb_timer timer, int pulse, int period) {
+void timer_pwm_generate(timer timer, int pulse, int period) {
 
 }
 
-void mb_timer_pwm_stop(mb_timer timer) {
+void timer_pwm_stop(timer timer) {
 
 }
 
@@ -360,13 +360,13 @@ static void timer_init() {
 
 static XSysMon sysmon;
 
-int mb_adc_num_devices() { return 16; }
-mb_adc mb_adc_open(int index) {
+int analog_num_devices() { return 16; }
+analog analog_open(int index) {
     if (index >= 16) return -1;
     return index;
 }
 
-int mb_adc_read_raw(mb_adc adc) {
+int analog_read_raw(analog adc) {
     if (adc >= 16) return 0;
     return XSysMon_GetAdcData(&sysmon, XSM_CH_AUX_MIN + adc);
 }
@@ -378,29 +378,29 @@ static void adc_init() {
     XSysMon_GetStatus(&sysmon);
 }
 
-int mb_adc_range(mb_adc adc) {
+int analog_range(analog adc) {
     return 65536;
 }
-float mb_adc_vref(mb_adc adc) {
+float analog_vref(analog adc) {
     return 3.3f;
 }
 
 #else // Analog definitions
 
-int mb_adc_num_devices() { return 0; }
-mb_adc mb_adc_open(int index) { return -1; }
-int mb_adc_read_raw(mb_adc adc) { return 0; }
-int mb_adc_range(mb_adc adc) { return 0; }
-float mb_adc_vref(mb_adc adc) { return 0.0f; }
+int analog_num_devices() { return 0; }
+analog analog_open(int index) { return -1; }
+int analog_read_raw(analog adc) { return 0; }
+int analog_range(analog adc) { return 0; }
+float analog_vref(analog adc) { return 0.0f; }
 static void adc_init() {}
 
 #endif // Analog definitions
 
-float mb_adc_read(mb_adc adc) {
-    return (mb_adc_read_raw(adc) * mb_adc_vref(adc)) / (mb_adc_range(adc));
+float analog_read(analog adc) {
+    return (analog_read_raw(adc) * analog_vref(adc)) / (analog_range(adc));
 }
 
-static mb_timer _delay_timer = -1;
+static timer _delay_timer = -1;
 static int _delay_channel;
 
 int delay(int ms) {
@@ -409,16 +409,17 @@ int delay(int ms) {
 
 int delayMicroseconds(int us) {
     if (_delay_timer == -1) return -1;
-    mb_timer_delay_us(_delay_timer, _delay_channel, us);
+    timer_delay_us(_delay_timer, _delay_channel, us);
     return 0;
 }
 
-void mb_set_delay_timer(mb_timer timer, int channel) {
+void timer_set_as_default(timer timer, int channel) {
     _delay_timer = timer;
     _delay_channel = channel;
 }
 
-void mb_io_init() {
+__attribute__((constructor(900)))
+static void mb_io_init() {
      gpio_init();
      i2c_init();
      spi_device_init();

@@ -87,7 +87,7 @@ int tmrctr_init(void) {
 }
 
 // SPI related functions
-void spi_transfer(u32 BaseAddress, int bytecount,
+void raw_spi_transfer(u32 BaseAddress, int bytecount,
                   u8* readBuffer, u8* writeBuffer) {
     int i;
 
@@ -112,7 +112,7 @@ void spi_transfer(u32 BaseAddress, int bytecount,
     XSpi_WriteReg(BaseAddress, XSP_SSR_OFFSET, 0xff);
 }
 
-void spi_init(u32 BaseAddress, u32 clk_phase, u32 clk_polarity){
+void raw_spi_init(u32 BaseAddress, u32 clk_phase, u32 clk_polarity){
     u32 Control;
 
     // Soft reset SPI
@@ -264,7 +264,7 @@ void config_arduino_switch(char A_pin0, char A_pin1, char A_pin2,
 
 void arduino_init(u32 shared_clk_phase, u32 shared_clk_polarity, 
                   u32 direct_clk_phase, u32 direct_clk_polarity) {
-    spi_init(SHARED_SPI_BASEADDR, shared_clk_phase, shared_clk_polarity);
-    spi_init(DIRECT_SPI_BASEADDR, direct_clk_phase, direct_clk_polarity);
+    raw_spi_init(SHARED_SPI_BASEADDR, shared_clk_phase, shared_clk_polarity);
+    raw_spi_init(DIRECT_SPI_BASEADDR, direct_clk_phase, direct_clk_polarity);
     tmrctr_init();
 }
