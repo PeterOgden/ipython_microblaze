@@ -46,6 +46,20 @@ from IPython.display import display_javascript
 class _DataHolder:
     pass
 
+class _FunctionWrapper:
+    def __init__(self, function, program):
+        self.library = program
+        self.stdio = program._mb.stream
+        self._mb = program._mb
+        self._function = function
+
+    def __call__(self, *args):
+        return self._function(*args)
+
+    def reset(self):
+        self._mb.reset()        
+
+
 @magics_class
 class MicroblazeMagics(Magics):
     def name2obj(self, name):
@@ -68,6 +82,19 @@ class MicroblazeMagics(Magics):
             return None
         self.shell.user_ns.update({var: program})
         return HTML("<pre>Compile SUCCEEDED</pre>")
+
+    @cell_magic
+    def microblaze_functions(self, line, cell):
+        mb_info = self.name2obj(line)
+        try:
+            program = MicroblazeRPC(mb_info, '#line 1 "cell_magic"\n\n' + cell)
+        except RuntimeError as r:
+            return HTML("<pre>Compile FAILED\n" + r.args[0] + "</pre>")
+            return None
+        for name, adapter in program.visitor.functions.items():
+            if adapter.filename == "cell_magic":
+                self.shell.user_ns.update({name: _FunctionWrapper(getattr(program, name), program)})
+             
 
 js = """
 require(['notebook/js/codecell'], function(codecell) {

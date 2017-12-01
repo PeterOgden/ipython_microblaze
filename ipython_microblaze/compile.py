@@ -45,7 +45,7 @@ __email__ = "ogden@xilinx.com"
 
 
 def dependencies(source, bsp):
-    args = ['cpp', '-MM']
+    args = ['mb-cpp', '-MM']
     for include_path in bsp.include_path:
         args.append('-I')
         args.append(include_path)
@@ -55,7 +55,7 @@ def dependencies(source, bsp):
             args.append('-I')
             args.append(include_path)
             paths[include_path] = name
-
+    source = source.replace('__extension__', '')
     result = run(args, stdout=PIPE, stderr=PIPE, input=source.encode())
     if result.returncode:
         raise RuntimeError("Preproseeor failed: \n" + result.stderr)
@@ -71,7 +71,7 @@ def preprocess(source, bsp=None, mb_info=None):
             raise RuntimeError("Must provide either a BSP or mb_info")
         bsp = BSPs[mb_info['mbtype']]
 
-    args = ['cpp']
+    args = ['mb-cpp', '-D__attribute__(x)=', '-D__extension__=', '-D__asm__(x)=']
     for include_path in bsp.include_path:
         args.append('-I')
         args.append(include_path)
@@ -80,6 +80,7 @@ def preprocess(source, bsp=None, mb_info=None):
             args.append('-I')
             args.append(include_path)
 
+    source = "typedef int __builtin_va_list;\n" + source
     result = run(args, stdout=PIPE, stderr=PIPE, input=source.encode())
     return result.stdout.decode()
 

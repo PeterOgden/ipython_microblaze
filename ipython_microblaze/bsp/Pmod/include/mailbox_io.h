@@ -11,5 +11,6 @@ int mailbox_open(const char* pathname, int flags, ...);
 ssize_t mailbox_read(int file, void* ptr, size_t len);
 ssize_t mailbox_write(int file, const void* ptr, size_t len);
 long mailbox_lseek(int fd, long offset, int whence);
+int mailbox_available(int fd);
 
 #endif
