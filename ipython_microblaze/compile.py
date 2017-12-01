@@ -36,7 +36,6 @@ import shutil
 from subprocess import run, PIPE
 
 from .streams import InterruptMBStream
-from .library import Peripheral
 from . import BSPs
 from . import Modules
 
