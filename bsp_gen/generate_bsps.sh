@@ -18,7 +18,7 @@ function delete_tmp() {
   rm -rf $tmp_dir
 }
 
-# trap delete_tmp EXIT
+trap delete_tmp EXIT
 
 echo "Writing BSPs from HDF $hdf_file to $bsp_dir"
 
