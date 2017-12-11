@@ -23,8 +23,10 @@
 #endif
 
 #define STDIN_OFFSET 0xF000
-#define STDOUT_OFFSET 0xF800
-#define IO_SIZE 0x800
+#define STDOUT_OFFSET 0xF400
+#define RPCIN_OFFSET 0xF800
+#define RPCOUT_OFFSET 0xFC00
+#define IO_SIZE 0x400
 
 #define MAX_DESCRIPTOR 10
 
@@ -35,9 +37,16 @@ typedef struct descriptor {
 } descriptor_t;
 
 static descriptor_t descriptors[MAX_DESCRIPTOR] = {
-	{(void*) STDIN_OFFSET, 0x7F8, O_RDONLY},
-	{(void*) STDOUT_OFFSET, 0x7F8, O_WRONLY}
+	{(void*) STDIN_OFFSET, IO_SIZE - 8, O_RDONLY},
+	{(void*) STDOUT_OFFSET, IO_SIZE - 8, O_WRONLY},
+	{(void*) RPCIN_OFFSET, IO_SIZE - 8, O_RDONLY},
+	{(void*) RPCOUT_OFFSET, IO_SIZE - 8, O_WRONLY}
 };
+
+__attribute__((weak))
+void _handle_events() {
+
+} 
 
 // Status == CTRL - 1
 /* void outbyte(char c) {
@@ -64,6 +73,34 @@ static void volatile_cpy(volatile char* dest, volatile char* src, int len) {
 	}
 }
 
+int mailbox_available(int file) {
+	if (file < 0 || file >= MAX_DESCRIPTOR || descriptors[file].base_addr == NULL) {
+		errno = EBADF;
+		return -1;
+	}
+	volatile int32_t* ctrl = (volatile int32_t*)descriptors[file].base_addr;
+	volatile int32_t* status = ctrl + 1;
+	volatile char* buffer = (volatile char*)(status + 1);
+	int buf_size = descriptors[file].size;
+	int available = 0;
+	int read_stream = descriptors[file].flags == O_RDONLY;
+
+	// The BRAM can produce rubbish when a read/write collision happens
+	// so read twice to make sure that the available data if valid.
+	int last_available = 0xFFFF;
+	int count = 0;
+	while (last_available != available) {
+		last_available = available;
+		if (read_stream) {
+			available = *ctrl - *status;
+		} else {
+			available = *status - *ctrl - 1;
+		}
+		if (available < 0) available += buf_size;
+	}
+	return available;
+}
+
 ssize_t mailbox_write(int file, const void* ptr, size_t len) {
 	if (file < 0 || file >= MAX_DESCRIPTOR || descriptors[file].flags != O_WRONLY || descriptors[file].base_addr == NULL) {
 		errno = EBADF;
@@ -74,14 +111,11 @@ ssize_t mailbox_write(int file, const void* ptr, size_t len) {
 	volatile char* buffer = (volatile char*)(status + 1);
 	int buf_size = descriptors[file].size;
 
-	int available = 0;
-	// The BRAM can produce rubbish when a read/write collision happens
-	// so read twice to make sure that the available data if valid.
-	int last_available = 0;
-	while (available == 0 || last_available != available) {
-		available = *status - *ctrl - 1;
-		if (available < 0) available += buf_size;
-		last_available = available;
+	int available = mailbox_available(file);
+	int count = 0;
+	while (available == 0) {
+		available = mailbox_available(file);
+		_handle_events();
 	}
 	int write_ptr = *ctrl;
 	int to_write = len < available? len : available;
@@ -113,15 +147,11 @@ ssize_t mailbox_read(int file, void* ptr, size_t len) {
 	volatile char* buffer = (volatile char*)(status + 1);
 	int buf_size = descriptors[file].size;
 
-	int available = 0;
-	// The BRAM can produce rubbish when a read/write collision happens
-	// so read twice to make sure that the available data if valid.
-	int last_available = 0;
+	int available = mailbox_available(file);
 	// Spin waiting for at least one byte to be available
-	while (available == 0 || last_available != available) {
-		available = *ctrl - *status;
-		if (available < 0) available += buf_size;
-		last_available = available;
+	while (available == 0) {
+		available = mailbox_available(file);
+		_handle_events();
 	}
 	int read_ptr = *status;
 	int to_read = len < available? len : available;
