@@ -349,16 +349,18 @@ class FuncAdapter:
         function_call = c_ast.FuncCall(c_ast.ID(self.name), 
                                        c_ast.ExprList(func_args))
         
-        if type(self.return_interface) is VoidWrapper:
-            block_contents.append(function_call)
-        else:
+        self.returns = type(self.return_interface) is not VoidWrapper
+        if self.returns:
             ret_assign = c_ast.Decl(
                 'ret', [], [], [], 
                 c_ast.TypeDecl('ret', [], decl.type.type),
                 function_call, []
             )
             block_contents.append(ret_assign)
+            block_contents.append(_generate_write('return_command'))
             block_contents.append(_generate_write('ret'))
+        else:
+            block_contents.append(function_call)
 
         block_contents.extend(post_block_contents)
         self.call_ast = c_ast.Compound(block_contents)
@@ -496,6 +498,7 @@ def _build_main(program_text, functions):
     sections.append(R"""
     #include <unistd.h>
     #include <mailbox_io.h>
+    static const char return_command = 0;
 
     static void _rpc_read(void* data, int size) {
         int available = mailbox_available(2);
@@ -527,6 +530,28 @@ def _build_main(program_text, functions):
     
     return "\n".join(sections)
 
+def _pyprintf(stream):
+    format_string = stream.read_string()
+    in_special = False
+    args = []
+    for i in range(len(format_string)):
+        if in_special:
+            if format_string[i:i+1] == b'd':
+                args.append(stream.read_int32())
+            elif format_string[i:i+1] == b'f':
+                args.append(stream.read_float())
+            in_special = False
+        elif format_string[i:i+1] == b'%':
+            in_special = True
+
+    print(format_string.decode() % tuple(args), end='')
+
+def _handle_command(command, stream):
+    if command == 1: # print command
+       _pyprintf(stream)
+    else:
+       raise RuntimeError(f'Unknown command {command}')
+
 def _function_wrapper(stream, index, adapter, return_type, *args):
     """ Calls a function in the microblaze, designed to be used
     with functools.partial to build a new thing
@@ -535,6 +560,12 @@ def _function_wrapper(stream, index, adapter, return_type, *args):
     arg_string = struct.pack('l', index)
     arg_string += adapter.pack_args(*args)
     stream.write(arg_string)
+    if not adapter.returns:
+        return None
+    command = stream.read(1)[0]
+    while command != 0:
+        _handle_command(command, stream)
+        command = stream.read(1)[0]
     response = adapter.receive_response(stream, *args)
     if return_type:
         return return_type(response)
