@@ -58,7 +58,7 @@ def dependencies(source, bsp):
     source = source.replace('__extension__', '')
     result = run(args, stdout=PIPE, stderr=PIPE, input=source.encode())
     if result.returncode:
-        raise RuntimeError("Preproseeor failed: \n" + result.stderr)
+        raise RuntimeError("Preprocessor failed: \n" + result.stderr.decode())
     dependent_paths = result.stdout.decode()
     dependent_modules = {v for k, v in paths.items()
                          if dependent_paths.find(k) != -1 }
