@@ -5,11 +5,19 @@
 
 static const char printf_command = 1;
 
+void complete_write(int fd, const char* data, unsigned int length) {
+    while (length > 0) {
+        int written = write(fd, data, length);
+        length -= written;
+        data += written;
+    }
+}
+
 void pyprintf(const char* format, ...) {
     unsigned short len = strlen(format);
-    write(3, &printf_command, 1);
-    write(3, &len, 2);
-    write(3, format, len);
+    complete_write(3, &printf_command, 1);
+    complete_write(3, &len, 2);
+    complete_write(3, format, len);
     int in_special = 0;
     va_list args;
     va_start(args, format);
@@ -19,13 +27,13 @@ void pyprintf(const char* format, ...) {
             case 'd':
             {
                 int val = va_arg(args, int);
-                write(3, &val, sizeof(val));
+                complete_write(3, &val, sizeof(val));
             }
                 break;
             case 'f':
             {
                 float val = (double)va_arg(args, double);
-                write(3, &val, sizeof(val));
+                complete_write(3, &val, sizeof(val));
             }
                 break;
             }
