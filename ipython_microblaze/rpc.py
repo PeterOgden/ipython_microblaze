@@ -422,6 +422,9 @@ class FuncDefVisitor(pycparser.c_ast.NodeVisitor):
     def visit_FuncDecl(self, node):
         if node.coord.file.startswith('/opt/microblaze'):
             return
+        if type(node.type) is not c_ast.TypeDecl:
+            # Ignore functions that are returning pointers
+            return
         name = node.type.declname
         if 'static' in node.type.quals:
             # Don't process static functions
